@@ -9,7 +9,7 @@
 #    $ ansible-playbook -i software-matlab/tests/inventory software-matlab/tests/test.yml --tags matlab
 
 - name: Install Matlab Test Run
-  hosts: test
+  hosts: all
   remote_user: ansible
   become_user: root
   become: true
