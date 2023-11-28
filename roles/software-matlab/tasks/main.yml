@@ -1,0 +1,66 @@
+---
+
+# $Id$ roles/software-matlab/tasks/main.yml v1.0 2023/07/14 fzhang
+#
+#  Install MATLAB in managed node
+#    Prerequisite: Matlab ISO file (*.iso) mounted on managed host via NFS along with an input 
+#    file (*.ini) and the network license configuration file (*.lic). "File Installation Key
+#    (FIK)" is decleared in the input file.
+#     
+#      /scratch/ISO/other/matlab/R2023a_Update_2_Linux.iso (matlab_iso)
+#      /scratch/ISO/other/matlab/R2023a_Update_2_Linux.ini (matlab_ini)
+#      /scratch/ISO/other/matlab/R2023a_Update_2_Linux.lic
+
+- name: MATLAB | Fetch installation options...
+  tags: [matlab]
+  ansible.builtin.slurp:
+    src: "{{ matlab_ini }}"
+  register: options
+
+- name: MATLAB | Check whether matlab exists already...
+  tags: [matlab]
+  ansible.builtin.stat:
+    path: "{{ options['content'] | b64decode | regex_findall('\n[ ]*destinationFolder=(.*)') | last }}"
+  register: home
+
+- name: MATLAB | Start Matlab installation...
+  tags: [matlab]
+  when: not home.stat.exists
+  vars:
+    mount_point: "/mnt/matlab_iso_{{ ansible_date_time.epoch }}"
+  block:
+
+    - name: MATLAB | Mount ISO image...
+      ansible.posix.mount:
+        src: "{{ matlab_iso }}"
+        path: "{{ mount_point }}"
+        fstype: iso9660
+        opts: ro
+        boot: false
+        state: mounted
+
+    - name: MATLAB | Install package, progress being logged in {{ ansible_hostname }}:/var/log/matlab.log...
+      vars:
+        install_output: "{{ options['content'] | b64decode | regex_findall('\n[ ]*outputFile=(.*)') | last }}"
+        success: "{{ successful_install }}"
+      ansible.builtin.shell: |
+        cd {{ mount_point }}
+        ./install -mode silent -inputFile {{ matlab_ini }}
+        awk 'END {print $NF}' {{ install_output }}
+      register: output
+      changed_when: output.stdout == success
+
+    - name: MATLAB | Make symbolic link /usr/local/bin/matlab...
+      when: output.stdout == success
+      vars:
+        matlab_exe: "{{ options['content'] | b64decode | regex_findall('\n[ ]*destinationFolder=(.*)') | last }}/bin/matlab"
+        success: "{{ successful_install }}"
+      ansible.builtin.file:
+        src: "{{ matlab_exe }}"
+        dest: "/usr/local/bin/matlab"
+        state: link
+
+    - name: MATLAB | Unmount ISO image...
+      ansible.posix.mount:
+        path: "{{ mount_point }}"
+        state: absent

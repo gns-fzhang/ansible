@@ -1,0 +1,13 @@
+---
+
+# $Id$ roles/software-matlab/defaults/main.yml v1.0 2023/07/14 fzhang
+#
+
+# MATLAB ISO Image
+matlab_iso: /scratch/ISO/other/matlab/R2023a_Update_2_Linux.iso
+
+# Input File for Silent Installation
+matlab_ini: /scratch/ISO/other/matlab/R2023a_Update_2_Linux.ini
+
+# Last word in matlab.log when installation was successful
+successful_install: Successful
