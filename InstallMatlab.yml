@@ -1,0 +1,24 @@
+---
+
+# $Id$ roles/software-matlab/tests/test.yml v1.0 2023/07/14 fzhang
+#
+#  Testing install MATLAB in test group.  The progress of installation
+#  is logged in /var/log/matlab.log on managed host(s) in test group.
+#
+#    $ export ANSIBLE_ROLES_PATH=$(pwd)
+#    $ ansible-playbook -i software-matlab/tests/inventory software-matlab/tests/test.yml --tags matlab
+
+- name: Install Matlab Test Run
+  hosts: all
+  remote_user: ansible
+  become_user: root
+  become: true
+
+# The following variables are in default/main.yml, but can be decleared here
+# to overwrite the default ones as follows.
+# vars:
+#   matlab_ini: /scratch/ISO/other/matlab/R2021b_Update_4_Linux.ini
+#   matlab_iso: /scratch/ISO/other/matlab/R2021b_Update_4_Linux.iso
+
+  roles:
+    - software-matlab
